@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Hồ sơ cá nhân - Quản lý Thư viện{% endblock %}
+
+{% block content %}
+<div class="container-fluid main-content">
+    <div class="page-header">
+        <h1><i class="fas fa-user"></i> Hồ Sơ Cá Nhân</h1>
+        <p>Xem và quản lý thông tin tài khoản của bạn</p>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-user-circle" style="font-size: 5rem; color: #1f4788;"></i>
+                    <h4 class="card-title mt-3">{{ current_user.full_name }}</h4>
+                    <p class="text-muted">@{{ current_user.username }}</p>
+                    <hr>
+                    <div class="mb-3">
+                        <strong>Email:</strong><br>
+                        {{ current_user.email }}
+                    </div>
+                    {% if current_user.phone %}
+                        <div class="mb-3">
+                            <strong>Điện thoại:</strong><br>
+                            {{ current_user.phone }}
+                        </div>
+                    {% endif %}
+                    <a href="{{ url_for('user.edit_profile') }}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-edit"></i> Chỉnh sửa
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <!-- Statistics -->
+            <div class="row mb-4">
+                <div class="col-md-6 mb-3">
+                    <div class="stat-card">
+                        <h3>{{ active_borrows|length }}</h3>
+                        <p>Sách đang mượn</p>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="stat-card" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
+                        <h3>{{ overdue_count }}</h3>
+                        <p>Sách quá hạn</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Borrows -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-bookmark"></i> Sách Đang Mượn ({{ active_borrows|length }})
+                </div>
+                <div class="card-body">
+                    {% if active_borrows %}
+                        <div class="list-group">
+                            {% for record in active_borrows[:5] %}
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1">{{ record.book.title }}</h6>
+                                            <p class="mb-1 text-muted">{{ record.book.author }}</p>
+                                            <small>
+                                                Hạn: <strong>{{ record.due_date.strftime('%d/%m/%Y') }}</strong>
+                                            </small>
+                                        </div>
+                                        <div>
+                                            {% if record.is_overdue() %}
+                                                <span class="badge bg-danger">Quá hạn</span>
+                                            {% else %}
+                                                <span class="badge bg-info">{{ record.get_days_remaining() }} ngày</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <div class="text-center mt-3">
+                            <a href="{{ url_for('borrow.my_books') }}" class="btn btn-sm btn-outline-primary">
+                                Xem tất cả
+                            </a>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Bạn không có sách nào đang mượn</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Account Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-lock"></i> Bảo Mật
+                </div>
+                <div class="card-body">
+                    <a href="{{ url_for('user.change_password') }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-key"></i> Đổi Mật Khẩu
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% set now = dict(date=lambda: datetime.utcnow()).__getitem__('date') %}
+{% endblock %}

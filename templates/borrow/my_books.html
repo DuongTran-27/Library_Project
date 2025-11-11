@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Sách của tôi - Quản lý Thư viện{% endblock %}
+
+{% block content %}
+<div class="container-fluid main-content">
+    <div class="page-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1><i class="fas fa-bookmark"></i> Sách của Tôi</h1>
+                <p>Quản lý những cuốn sách bạn đang mượn</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{{ url_for('borrow.history') }}" class="btn btn-outline-light">
+                    <i class="fas fa-history"></i> Lịch sử mượn
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% if borrows.items %}
+        <div class="alert alert-warning" role="alert">
+            <i class="fas fa-money-bill"></i> Tổng tiền phạt: <strong>{{ "{:,.0f}".format(total_late_fee) }} VND</strong>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Tên Sách</th>
+                        <th>Tác Giả</th>
+                        <th>Ngày Mượn</th>
+                        <th>Hạn Trả</th>
+                        <th>Trạng Thái</th>
+                        <th>Tiền Phạt</th>
+                        <th>Hành Động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in borrows.items %}
+                        {% set is_overdue = record.is_overdue() %}
+                        {% set late_fee = record.calculate_late_fee() %}
+                        <tr {% if is_overdue %}class="table-danger"{% endif %}>
+                            <td>
+                                <strong>{{ record.book.title[:40] }}</strong>
+                            </td>
+                            <td>{{ record.book.author }}</td>
+                            <td>{{ record.borrow_date.strftime('%d/%m/%Y') }}</td>
+                            <td>
+                                <strong>{{ record.due_date.strftime('%d/%m/%Y') }}</strong>
+                                {% if is_overdue %}
+                                    <br>
+                                    <span class="badge bg-danger">
+                                        Quá hạn {{ (now().date() - record.due_date.date()).days }} ngày
+                                    </span>
+                                {% else %}
+                                    <br>
+                                    <span class="badge bg-info">
+                                        Còn {{ record.get_days_remaining() }} ngày
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if is_overdue %}
+                                    <span class="badge bg-danger"><i class="fas fa-exclamation-circle"></i> Quá hạn</span>
+                                {% else %}
+                                    <span class="badge bg-success"><i class="fas fa-check-circle"></i> Bình thường</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if late_fee > 0 %}
+                                    <span class="text-danger font-weight-bold">{{ "{:,.0f}".format(late_fee) }} VND</span>
+                                {% else %}
+                                    <span class="text-success">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <form method="POST" action="{{ url_for('borrow.return_book', record_id=record.id) }}" style="display: inline;">
+                                    <button type="submit" class="btn btn-sm btn-success" title="Trả sách">
+                                        <i class="fas fa-check"></i> Trả
+                                    </button>
+                                </form>
+                                {% if not is_overdue %}
+                                    <form method="POST" action="{{ url_for('borrow.renew', record_id=record.id) }}" style="display: inline;">
+                                        <button type="submit" class="btn btn-sm btn-info" title="Gia hạn sách">
+                                            <i class="fas fa-sync"></i> Gia hạn
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if borrows.pages > 1 %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if borrows.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ borrows.prev_num }}">Trước</a>
+                        </li>
+                    {% endif %}
+
+                    {% for page_num in borrows.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num == borrows.page %}
+                                <li class="page-item active"><span class="page-link">{{ page_num }}</span></li>
+                            {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_num }}">{{ page_num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if borrows.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ borrows.next_num }}">Tiếp</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    {% else %}
+        <div class="alert alert-info text-center" role="alert">
+            <i class="fas fa-info-circle"></i> Bạn chưa mượn cuốn sách nào
+            <br>
+            <a href="{{ url_for('book.index') }}" class="btn btn-sm btn-primary mt-2">
+                <i class="fas fa-book"></i> Mượn sách ngay
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

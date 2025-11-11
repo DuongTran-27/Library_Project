@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Admin - Quản lý Thư viện{% endblock %}
+
+{% block content %}
+<div class="container-fluid main-content">
+    <div class="page-header">
+        <h1><i class="fas fa-chart-line"></i> Dashboard Quản Trị</h1>
+        <p>Tổng hợp thông tin về thư viện</p>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="stat-card">
+                <h3>{{ stats.total_books }}</h3>
+                <p>Tổng Số Sách</p>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="stat-card" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+                <h3>{{ stats.available_books }}</h3>
+                <p>Sách Sẵn Có</p>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="stat-card" style="background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);">
+                <h3>{{ stats.borrowed_books }}</h3>
+                <p>Sách Đang Mượn</p>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="stat-card" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
+                <h3>{{ stats.overdue_books }}</h3>
+                <p>Sách Quá Hạn</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="stat-card" style="background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);">
+                <h3>{{ stats.total_users }}</h3>
+                <p>Tổng Độc Giả</p>
+            </div>
+        </div>
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-file-pdf"></i> Báo Cáo
+                </div>
+                <div class="card-body">
+                    <a href="{{ url_for('admin.report_statistics') }}" class="btn btn-danger">
+                        <i class="fas fa-download"></i> Xuất Báo Cáo Thống Kê
+                    </a>
+                    <a href="{{ url_for('admin.reports') }}" class="btn btn-info">
+                        <i class="fas fa-chart-bar"></i> Xem Báo Cáo
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Most Borrowed Books -->
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-fire"></i> Sách Mượn Nhiều Nhất
+                </div>
+                <div class="card-body">
+                    {% if stats.most_borrowed %}
+                        <div class="list-group">
+                            {% for book, count in stats.most_borrowed[:5] %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">{{ book.title[:30] }}</h6>
+                                        <small class="text-muted">{{ book.author }}</small>
+                                    </div>
+                                    <span class="badge bg-primary rounded-pill">{{ count }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Chưa có dữ liệu</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Readers -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-star"></i> Độc Giả Tích Cực
+                </div>
+                <div class="card-body">
+                    {% if stats.active_readers %}
+                        <div class="list-group">
+                            {% for user, count in stats.active_readers[:5] %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">{{ user.full_name }}</h6>
+                                        <small class="text-muted">{{ user.email }}</small>
+                                    </div>
+                                    <span class="badge bg-success rounded-pill">{{ count }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Chưa có dữ liệu</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Actions -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-tools"></i> Quản Lý
+                </div>
+                <div class="card-body">
+                    <div class="btn-group" role="group">
+                        <a href="{{ url_for('admin.users') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-users"></i> Quản Lý Độc Giả
+                        </a>
+                        <a href="{{ url_for('admin.books') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-book"></i> Quản Lý Sách
+                        </a>
+                        <a href="{{ url_for('admin.categories') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-list"></i> Quản Lý Thể Loại
+                        </a>
+                        <a href="{{ url_for('admin.overdue_books') }}" class="btn btn-outline-danger">
+                            <i class="fas fa-exclamation-circle"></i> Sách Quá Hạn
+                        </a>
+                        <a href="{{ url_for('admin.reservations') }}" class="btn btn-outline-info">
+                            <i class="fas fa-calendar"></i> Đặt Trước
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

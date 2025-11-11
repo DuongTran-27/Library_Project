@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Lịch sử mượn - Quản lý Thư viện{% endblock %}
+
+{% block content %}
+<div class="container-fluid main-content">
+    <div class="page-header">
+        <h1><i class="fas fa-history"></i> Lịch Sử Mượn Sách</h1>
+        <p>Xem lại các sách bạn đã mượn trước đây</p>
+    </div>
+
+    {% if history.items %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Tên Sách</th>
+                        <th>Tác Giả</th>
+                        <th>Ngày Mượn</th>
+                        <th>Hạn Trả</th>
+                        <th>Ngày Trả</th>
+                        <th>Tiền Phạt</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in history.items %}
+                        {% set is_late = record.return_date > record.due_date %}
+                        <tr {% if is_late %}class="table-warning"{% endif %}>
+                            <td><strong>{{ record.book.title[:40] }}</strong></td>
+                            <td>{{ record.book.author }}</td>
+                            <td>{{ record.borrow_date.strftime('%d/%m/%Y') }}</td>
+                            <td>{{ record.due_date.strftime('%d/%m/%Y') }}</td>
+                            <td>
+                                {{ record.return_date.strftime('%d/%m/%Y') }}
+                                {% if is_late %}
+                                    <br>
+                                    <span class="badge bg-warning">Trễ {{ (record.return_date.date() - record.due_date.date()).days }} ngày</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if record.late_fee > 0 %}
+                                    <span class="text-danger font-weight-bold">{{ "{:,.0f}".format(record.late_fee) }} VND</span>
+                                {% else %}
+                                    <span class="text-success">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if history.pages > 1 %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if history.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ history.prev_num }}">Trước</a>
+                        </li>
+                    {% endif %}
+
+                    {% for page_num in history.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num == history.page %}
+                                <li class="page-item active"><span class="page-link">{{ page_num }}</span></li>
+                            {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_num }}">{{ page_num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if history.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ history.next_num }}">Tiếp</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    {% else %}
+        <div class="alert alert-info text-center" role="alert">
+            <i class="fas fa-info-circle"></i> Bạn chưa có lịch sử mượn sách
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

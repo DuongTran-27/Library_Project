@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Tạo Sách - Quản lý Thư viện{% endblock %}
+
+{% block content %}
+<div class="container-fluid main-content">
+    <div class="page-header">
+        <h1><i class="fas fa-plus"></i> Thêm Sách Mới</h1>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="title" class="form-label">Tên Sách <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="title" name="title" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="author" class="form-label">Tác Giả <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="author" name="author" required>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="isbn" class="form-label">ISBN</label>
+                                <input type="text" class="form-control" id="isbn" name="isbn">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="publisher" class="form-label">Nhà Xuất Bản</label>
+                                <input type="text" class="form-control" id="publisher" name="publisher">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="published_year" class="form-label">Năm Xuất Bản</label>
+                                <input type="number" class="form-control" id="published_year" name="published_year" min="1900" max="2100">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="total_copies" class="form-label">Tổng Bản <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="total_copies" name="total_copies" value="1" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Mô Tả</label>
+                            <textarea class="form-control" id="description" name="description" rows="4"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="categories" class="form-label">Thể Loại</label>
+                            <select class="form-select" id="categories" name="categories" multiple>
+                                {% for cat in categories %}
+                                    <option value="{{ cat.id }}">{{ cat.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <small class="form-text text-muted">Giữ Ctrl để chọn nhiều thể loại</small>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('book.index') }}" class="btn btn-secondary">Hủy</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Thêm Sách
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Quản lý Sách - Quản lý Thư viện{% endblock %}
+
+{% block content %}
+<div class="container-fluid main-content">
+    <div class="page-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1><i class="fas fa-book"></i> Quản Lý Sách</h1>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{{ url_for('book.create') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Thêm Sách
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <form method="GET" class="d-flex gap-2">
+                <input type="text" name="search" class="form-control" placeholder="Tìm theo tên sách, tác giả..."
+                       value="{{ search }}">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search"></i> Tìm kiếm
+                </button>
+            </form>
+        </div>
+    </div>
+
+    {% if books.items %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Tên Sách</th>
+                        <th>Tác Giả</th>
+                        <th>ISBN</th>
+                        <th>Sẵn Có</th>
+                        <th>Tổng</th>
+                        <th>Hành Động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for book in books.items %}
+                        <tr>
+                            <td><strong>{{ book.title[:40] }}</strong></td>
+                            <td>{{ book.author }}</td>
+                            <td>{{ book.isbn or '-' }}</td>
+                            <td>
+                                {% if book.available_copies > 0 %}
+                                    <span class="badge bg-success">{{ book.available_copies }}</span>
+                                {% else %}
+                                    <span class="badge bg-danger">0</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ book.total_copies }}</td>
+                            <td>
+                                <a href="{{ url_for('book.detail', book_id=book.id) }}" class="btn btn-sm btn-info">
+                                    <i class="fas fa-eye"></i> Xem
+                                </a>
+                                <a href="{{ url_for('book.edit', book_id=book.id) }}" class="btn btn-sm btn-warning">
+                                    <i class="fas fa-edit"></i> Sửa
+                                </a>
+                                <form method="POST" action="{{ url_for('book.delete', book_id=book.id) }}" style="display: inline;">
+                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Xóa sách này?')">
+                                        <i class="fas fa-trash"></i> Xóa
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if books.pages > 1 %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if books.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ books.prev_num }}&search={{ search }}">Trước</a>
+                        </li>
+                    {% endif %}
+
+                    {% for page_num in books.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num == books.page %}
+                                <li class="page-item active"><span class="page-link">{{ page_num }}</span></li>
+                            {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_num }}&search={{ search }}">{{ page_num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if books.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ books.next_num }}&search={{ search }}">Tiếp</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    {% else %}
+        <div class="alert alert-info text-center" role="alert">
+            <i class="fas fa-info-circle"></i> 
+            {% if search %}
+                Không tìm thấy sách nào
+            {% else %}
+                Chưa có sách nào
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

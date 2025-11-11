@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}Chi tiết Độc Giả - Quản lý Thư viện{% endblock %}
+
+{% block content %}
+<div class="container-fluid main-content">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Admin</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('admin.users') }}">Độc Giả</a></li>
+            <li class="breadcrumb-item active">{{ user.full_name }}</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-user-circle" style="font-size: 5rem; color: #1f4788;"></i>
+                    <h4 class="card-title mt-3">{{ user.full_name }}</h4>
+                    <p class="text-muted">@{{ user.username }}</p>
+                    
+                    <div class="mb-3 text-start">
+                        <p><strong>Email:</strong> {{ user.email }}</p>
+                        <p><strong>Điện thoại:</strong> {{ user.phone or '-' }}</p>
+                        <p><strong>Địa chỉ:</strong> {{ user.address or '-' }}</p>
+                        <p><strong>Ngày tham gia:</strong> {{ user.created_at.strftime('%d/%m/%Y') }}</p>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div>
+                        {% if user.is_active %}
+                            <form method="POST" action="{{ url_for('admin.toggle_user_status', user_id=user.id) }}" style="display: inline;">
+                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Khóa tài khoản này?')">
+                                    <i class="fas fa-lock"></i> Khóa
+                                </button>
+                            </form>
+                        {% else %}
+                            <form method="POST" action="{{ url_for('admin.toggle_user_status', user_id=user.id) }}" style="display: inline;">
+                                <button type="submit" class="btn btn-success btn-sm">
+                                    <i class="fas fa-unlock"></i> Kích hoạt
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <!-- Active Borrows -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-bookmark"></i> Sách Đang Mượn ({{ active_borrows|length }})
+                </div>
+                <div class="card-body">
+                    {% if active_borrows %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Tên Sách</th>
+                                        <th>Hạn Trả</th>
+                                        <th>Trạng Thái</th>
+                                        <th>Hành Động</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for record in active_borrows %}
+                                        <tr {% if record.is_overdue() %}class="table-danger"{% endif %}>
+                                            <td>{{ record.book.title[:30] }}</td>
+                                            <td>{{ record.due_date.strftime('%d/%m/%Y') }}</td>
+                                            <td>
+                                                {% if record.is_overdue() %}
+                                                    <span class="badge bg-danger">Quá hạn</span>
+                                                {% else %}
+                                                    <span class="badge bg-success">Bình thường</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <form method="POST" action="{{ url_for('borrow.admin_return', record_id=record.id) }}" style="display: inline;">
+                                                    <button type="submit" class="btn btn-sm btn-success">Trả</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Không có sách đang mượn</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Borrow History -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-history"></i> Lịch Sử Mượn ({{ borrow_history|length }})
+                </div>
+                <div class="card-body">
+                    {% if borrow_history %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Tên Sách</th>
+                                        <th>Ngày Mượn</th>
+                                        <th>Ngày Trả</th>
+                                        <th>Tiền Phạt</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for record in borrow_history %}
+                                        <tr>
+                                            <td>{{ record.book.title[:30] }}</td>
+                                            <td>{{ record.borrow_date.strftime('%d/%m/%Y') }}</td>
+                                            <td>{{ record.return_date.strftime('%d/%m/%Y') if record.return_date else '-' }}</td>
+                                            <td>
+                                                {% if record.late_fee > 0 %}
+                                                    {{ "{:,.0f}".format(record.late_fee) }} VND
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="text-center mt-3">
+                            <a href="{{ url_for('admin.report_user_borrow', user_id=user.id) }}" class="btn btn-sm btn-danger">
+                                <i class="fas fa-download"></i> Xuất PDF
+                            </a>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Không có lịch sử mượn</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

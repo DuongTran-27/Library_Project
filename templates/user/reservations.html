@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Sách Đặt Trước - Quản lý Thư viện{% endblock %}
+
+{% block content %}
+<div class="container-fluid main-content">
+    <div class="page-header">
+        <h1><i class="fas fa-calendar"></i> Sách Đặt Trước</h1>
+        <p>Xem danh sách các cuốn sách bạn đã đặt trước</p>
+    </div>
+
+    {% if reservations.items %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Tên Sách</th>
+                        <th>Tác Giả</th>
+                        <th>Ngày Đặt</th>
+                        <th>Trạng Thái</th>
+                        <th>Hành Động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for res in reservations.items %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('book.detail', book_id=res.book.id) }}">
+                                    <strong>{{ res.book.title }}</strong>
+                                </a>
+                            </td>
+                            <td>{{ res.book.author }}</td>
+                            <td>{{ res.reserved_at.strftime('%d/%m/%Y') }}</td>
+                            <td>
+                                {% if res.status == 'waiting' %}
+                                    <span class="badge bg-warning">Chờ</span>
+                                {% elif res.status == 'notified' %}
+                                    <span class="badge bg-info">Đã thông báo</span>
+                                {% elif res.status == 'fulfilled' %}
+                                    <span class="badge bg-success">Hoàn tất</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ res.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <form method="POST" action="{{ url_for('book.cancel_reservation', reservation_id=res.id) }}" style="display: inline;">
+                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Hủy đặt trước?')">
+                                        <i class="fas fa-times"></i> Hủy
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if reservations.pages > 1 %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if reservations.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ reservations.prev_num }}">Trước</a>
+                        </li>
+                    {% endif %}
+
+                    {% for page_num in reservations.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num == reservations.page %}
+                                <li class="page-item active"><span class="page-link">{{ page_num }}</span></li>
+                            {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_num }}">{{ page_num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if reservations.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ reservations.next_num }}">Tiếp</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    {% else %}
+        <div class="alert alert-info text-center" role="alert">
+            <i class="fas fa-info-circle"></i> Bạn chưa đặt trước cuốn sách nào
+            <br>
+            <a href="{{ url_for('book.index') }}" class="btn btn-sm btn-primary mt-2">
+                <i class="fas fa-book"></i> Duyệt sách
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

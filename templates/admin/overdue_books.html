@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Sách Quá Hạn - Quản lý Thư viện{% endblock %}
+
+{% block content %}
+<div class="container-fluid main-content">
+    <div class="page-header">
+        <h1><i class="fas fa-exclamation-circle"></i> Sách Quá Hạn</h1>
+        <p>Danh sách những cuốn sách được mượn quá hạn</p>
+    </div>
+
+    {% if overdue.items %}
+        <div class="alert alert-danger" role="alert">
+            <i class="fas fa-warning"></i> Có <strong>{{ overdue.total }}</strong> cuốn sách quá hạn
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover table-danger">
+                <thead class="table-light">
+                    <tr>
+                        <th>Độc Giả</th>
+                        <th>Sách</th>
+                        <th>Tác Giả</th>
+                        <th>Hạn Trả</th>
+                        <th>Quá Hạn (Ngày)</th>
+                        <th>Tiền Phạt</th>
+                        <th>Hành Động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in overdue.items %}
+                        {% set days_overdue = (now() - record.due_date).days %}
+                        {% set late_fee = record.calculate_late_fee() %}
+                        <tr>
+                            <td>
+                                <strong>{{ record.user.full_name }}</strong><br>
+                                <small class="text-muted">{{ record.user.email }}</small>
+                            </td>
+                            <td>{{ record.book.title[:30] }}</td>
+                            <td>{{ record.book.author }}</td>
+                            <td>{{ record.due_date.strftime('%d/%m/%Y') }}</td>
+                            <td>
+                                <span class="badge bg-danger">
+                                    {{ days_overdue }} ngày
+                                </span>
+                            </td>
+                            <td class="font-weight-bold">
+                                {{ "{:,.0f}".format(late_fee) }} VND
+                            </td>
+                            <td>
+                                <form method="POST" action="{{ url_for('borrow.admin_return', record_id=record.id) }}" style="display: inline;">
+                                    <button type="submit" class="btn btn-sm btn-success">
+                                        <i class="fas fa-check"></i> Xác nhận trả
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if overdue.pages > 1 %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if overdue.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ overdue.prev_num }}">Trước</a>
+                        </li>
+                    {% endif %}
+
+                    {% for page_num in overdue.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num == overdue.page %}
+                                <li class="page-item active"><span class="page-link">{{ page_num }}</span></li>
+                            {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_num }}">{{ page_num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if overdue.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ overdue.next_num }}">Tiếp</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    {% else %}
+        <div class="alert alert-success text-center" role="alert">
+            <i class="fas fa-check-circle"></i> Không có sách quá hạn!
+        </div>
+    {% endif %}
+</div>
+
+{% set now = dict(date=lambda: datetime.utcnow()).__getitem__('date') %}
+{% endblock %}
