@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Hệ Thống Quản Lý Thư Viện Trực Tuyến
 
 Một ứng dụng web hiện đại để quản lý mượn/trả sách, tìm kiếm sách và quản lý độc giả với giao diện thân thiện và dễ sử dụng.
@@ -269,3 +270,7 @@ Nếu gặp lỗi, vui lòng:
 ---
 
 **Developed with ❤️ using Flask**
+=======
+# Library_Project
+dự án quản lí thư viện
+>>>>>>> 69ecba46ba036f809cb3323a3a5614eac8f4f5e6
