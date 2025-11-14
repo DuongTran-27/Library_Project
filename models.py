@@ -146,8 +146,9 @@ class Reservation(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
+    # Create a composite index for better query performance
     __table_args__ = (
-        db.UniqueConstraint('user_id', 'book_id', 'status', name='unique_active_reservation'),
+        db.Index('ix_user_book_status', 'user_id', 'book_id', 'status'),
     )
     
     def __repr__(self):

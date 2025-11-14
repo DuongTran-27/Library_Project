@@ -85,6 +85,27 @@ def send_reservation_notification(user, book):
     
     send_email(subject, [user.email], html_body=html_body)
 
+def send_reservation_ready_notification(user, book):
+    """Send email when reserved book is ready for borrowing (auto-borrowed by admin)"""
+    subject = f"[Thư viện] Sách '{book.title}' sẵn sàng - Bạn được ưu tiên mượn"
+    
+    html_body = f"""
+    <html>
+    <head></head>
+    <body>
+        <h2>Sách bạn đặt trước đã sẵn sàng!</h2>
+        <p>Xin chào {user.full_name},</p>
+        <p>Cuốn sách <strong>{book.title}</strong> của tác giả <strong>{book.author}</strong> 
+        mà bạn đã đặt trước vừa được trả và bạn có thứ tự ưu tiên mượn.</p>
+        <p>Vui lòng đến thư viện để admin xác nhận mượn sách cho bạn trong vòng 3 ngày.</p>
+        <p>Nếu không nhận được sách trong thời gian này, đặt trước của bạn sẽ được hủy.</p>
+        <p>Trân trọng,<br>Hệ thống Quản lý Thư viện</p>
+    </body>
+    </html>
+    """
+    
+    send_email(subject, [user.email], html_body=html_body)
+
 def send_borrow_confirmation(user, book, due_date):
     """Send borrow confirmation email"""
     subject = f"[Thư viện] Xác nhận mượn sách: {book.title}"

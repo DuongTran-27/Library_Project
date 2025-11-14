@@ -18,6 +18,7 @@
                         <th>Tác Giả</th>
                         <th>Ngày Đặt</th>
                         <th>Trạng Thái</th>
+                        <th>Vị Trí</th>
                         <th>Hành Động</th>
                     </tr>
                 </thead>
@@ -30,16 +31,44 @@
                                 </a>
                             </td>
                             <td>{{ res.book.author }}</td>
-                            <td>{{ res.reserved_at.strftime('%d/%m/%Y') }}</td>
+                            <td>{{ res.reserved_at.strftime('%d/%m/%Y %H:%M') }}</td>
                             <td>
                                 {% if res.status == 'waiting' %}
-                                    <span class="badge bg-warning">Chờ</span>
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="fas fa-hourglass-half"></i> Chờ
+                                    </span>
                                 {% elif res.status == 'notified' %}
-                                    <span class="badge bg-info">Đã thông báo</span>
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check-circle"></i> Đã nhận sách!
+                                    </span>
                                 {% elif res.status == 'fulfilled' %}
-                                    <span class="badge bg-success">Hoàn tất</span>
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check"></i> Đã mượn
+                                    </span>
+                                {% elif res.status == 'cancelled' %}
+                                    <span class="badge bg-danger">
+                                        <i class="fas fa-ban"></i> Đã hủy
+                                    </span>
                                 {% else %}
                                     <span class="badge bg-secondary">{{ res.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if res.status == 'waiting' %}
+                                    {% set wait_count = res.book.reservations.filter_by(status='waiting').order_by('reserved_at').all() %}
+                                    {% set position = wait_count.index(res) + 1 %}
+                                    <span class="badge bg-primary">Thứ {{ position }}</span>
+                                    <br>
+                                    <small class="text-muted">
+                                        {% set available = res.book.available_copies %}
+                                        {% if available > 0 %}
+                                            {{ available }} sách sẵn
+                                        {% else %}
+                                            Chưa sẵn
+                                        {% endif %}
+                                    </small>
+                                {% else %}
+                                    <span class="text-muted">-</span>
                                 {% endif %}
                             </td>
                             <td>

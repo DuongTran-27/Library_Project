@@ -219,10 +219,78 @@ def overdue_books():
 def reservations():
     """Manage reservations"""
     page = request.args.get('page', 1, type=int)
+    status_filter = request.args.get('status', '', type=str)
     
-    reservations = Reservation.query.paginate(page=page, per_page=10)
+    query = Reservation.query
     
-    return render_template('admin/reservations.html', reservations=reservations)
+    if status_filter and status_filter in ['waiting', 'notified', 'fulfilled', 'cancelled']:
+        query = query.filter_by(status=status_filter)
+    
+    reservations = query.order_by(Reservation.reserved_at.asc()).paginate(page=page, per_page=10)
+    
+    return render_template('admin/reservations.html', reservations=reservations, status_filter=status_filter)
+
+@admin_bp.route('/reservation/<int:res_id>/confirm-borrow', methods=['POST'])
+@admin_required
+def confirm_reservation_borrow(res_id):
+    """Confirm and auto-borrow for reserved user"""
+    from datetime import timedelta
+    from config import Config
+    
+    reservation = Reservation.query.get_or_404(res_id)
+    
+    if reservation.status != 'notified':
+        flash('Chỉ có thể xác nhận đặt trước đã thông báo.', 'warning')
+        return redirect(url_for('admin.reservations'))
+    
+    user = reservation.user
+    book = reservation.book
+    
+    # Check max borrow limit
+    active_count = user.borrow_records.filter_by(return_date=None).count()
+    if active_count >= Config.MAX_BORROW_BOOKS:
+        flash(f'{user.full_name} đã đạt tới giới hạn mượn {Config.MAX_BORROW_BOOKS} sách.', 'danger')
+        return redirect(url_for('admin.reservations'))
+    
+    # Create borrow record
+    due_date = datetime.utcnow() + timedelta(days=Config.BORROW_DURATION_DAYS)
+    borrow_record = BorrowRecord(
+        user_id=user.id,
+        book_id=book.id,
+        due_date=due_date,
+        notes='Tự động mượn từ đặt trước'
+    )
+    
+    # Update reservation
+    reservation.status = 'fulfilled'
+    
+    db.session.add(borrow_record)
+    db.session.commit()
+    
+    # Send confirmation email
+    try:
+        from services.email_service import send_borrow_confirmation
+        send_borrow_confirmation(user, book, due_date)
+    except Exception as e:
+        print(f"Error sending email: {e}")
+    
+    flash(f'Xác nhận mượn sách cho {user.full_name} thành công!', 'success')
+    return redirect(url_for('admin.reservations'))
+
+@admin_bp.route('/reservation/<int:res_id>/cancel', methods=['POST'])
+@admin_required
+def cancel_reservation_admin(res_id):
+    """Cancel reservation from admin"""
+    reservation = Reservation.query.get_or_404(res_id)
+    
+    user_name = reservation.user.full_name
+    book_title = reservation.book.title
+    
+    reservation.status = 'cancelled'
+    db.session.commit()
+    
+    flash(f'Hủy đặt trước "{book_title}" của {user_name} thành công!', 'success')
+    return redirect(url_for('admin.reservations'))
 
 @admin_bp.route('/reports')
 @admin_required

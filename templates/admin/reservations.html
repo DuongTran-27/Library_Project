@@ -9,6 +9,27 @@
         <p>Xem danh sách những cuốn sách được đặt trước</p>
     </div>
 
+    <!-- Status Filter -->
+    <div class="mb-3">
+        <div class="btn-group" role="group">
+            <a href="{{ url_for('admin.reservations') }}" class="btn btn-outline-secondary {% if not status_filter %}active{% endif %}">
+                <i class="fas fa-list"></i> Tất cả
+            </a>
+            <a href="{{ url_for('admin.reservations', status='waiting') }}" class="btn btn-outline-warning {% if status_filter == 'waiting' %}active{% endif %}">
+                <i class="fas fa-hourglass-half"></i> Chờ {{ reservations.total if status_filter == 'waiting' else '' }}
+            </a>
+            <a href="{{ url_for('admin.reservations', status='notified') }}" class="btn btn-outline-info {% if status_filter == 'notified' %}active{% endif %}">
+                <i class="fas fa-bell"></i> Đã thông báo
+            </a>
+            <a href="{{ url_for('admin.reservations', status='fulfilled') }}" class="btn btn-outline-success {% if status_filter == 'fulfilled' %}active{% endif %}">
+                <i class="fas fa-check"></i> Hoàn tất
+            </a>
+            <a href="{{ url_for('admin.reservations', status='cancelled') }}" class="btn btn-outline-danger {% if status_filter == 'cancelled' %}active{% endif %}">
+                <i class="fas fa-ban"></i> Đã hủy
+            </a>
+        </div>
+    </div>
+
     {% if reservations.items %}
         <div class="table-responsive">
             <table class="table table-hover">
@@ -19,7 +40,7 @@
                         <th>Tác Giả</th>
                         <th>Ngày Đặt</th>
                         <th>Trạng Thái</th>
-                        <th>Hành Động</th>
+                        <th style="width: 280px;">Hành Động</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -29,24 +50,57 @@
                                 <strong>{{ res.user.full_name }}</strong><br>
                                 <small class="text-muted">{{ res.user.email }}</small>
                             </td>
-                            <td>{{ res.book.title[:30] }}</td>
+                            <td>
+                                <a href="{{ url_for('book.detail', book_id=res.book.id) }}">
+                                    {{ res.book.title[:40] }}
+                                </a>
+                            </td>
                             <td>{{ res.book.author }}</td>
-                            <td>{{ res.reserved_at.strftime('%d/%m/%Y') }}</td>
+                            <td>{{ res.reserved_at.strftime('%d/%m/%Y %H:%M') }}</td>
                             <td>
                                 {% if res.status == 'waiting' %}
-                                    <span class="badge bg-warning">Chờ</span>
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="fas fa-hourglass-half"></i> Chờ
+                                    </span>
                                 {% elif res.status == 'notified' %}
-                                    <span class="badge bg-info">Đã thông báo</span>
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check-circle"></i> Tự động được mượn
+                                    </span>
                                 {% elif res.status == 'fulfilled' %}
-                                    <span class="badge bg-success">Hoàn tất</span>
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check"></i> Đã mượn
+                                    </span>
+                                {% elif res.status == 'cancelled' %}
+                                    <span class="badge bg-danger">
+                                        <i class="fas fa-ban"></i> Đã hủy
+                                    </span>
                                 {% else %}
                                     <span class="badge bg-secondary">{{ res.status }}</span>
                                 {% endif %}
                             </td>
                             <td>
-                                <a href="{{ url_for('admin.user_detail', user_id=res.user.id) }}" class="btn btn-sm btn-info">
-                                    <i class="fas fa-user"></i> Xem độc giả
-                                </a>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{{ url_for('admin.user_detail', user_id=res.user.id) }}" class="btn btn-info">
+                                        <i class="fas fa-user"></i> Xem
+                                    </a>
+                                    
+                                    {% if res.status == 'waiting' %}
+                                        <form method="POST" action="{{ url_for('admin.cancel_reservation_admin', res_id=res.id) }}" style="display: inline;">
+                                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Hủy đặt trước này?');" title="Hủy đặt trước">
+                                                <i class="fas fa-times"></i> Hủy
+                                            </button>
+                                        </form>
+                                    {% elif res.status == 'notified' %}
+                                        <button class="btn btn-info btn-sm" disabled title="Sách đang chờ được nhận">
+                                            <i class="fas fa-hourglass-end"></i> Chờ nhận
+                                        </button>
+                                        <form method="POST" action="{{ url_for('admin.cancel_reservation_admin', res_id=res.id) }}" style="display: inline;">
+                                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Hủy đặt trước này?');" title="Hủy đặt trước">
+                                                <i class="fas fa-times"></i> Hủy
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                </div>
                             </td>
                         </tr>
                     {% endfor %}
@@ -60,7 +114,7 @@
                 <ul class="pagination justify-content-center">
                     {% if reservations.has_prev %}
                         <li class="page-item">
-                            <a class="page-link" href="?page={{ reservations.prev_num }}">Trước</a>
+                            <a class="page-link" href="?page={{ reservations.prev_num }}{% if status_filter %}&status={{ status_filter }}{% endif %}">Trước</a>
                         </li>
                     {% endif %}
 
@@ -70,7 +124,7 @@
                                 <li class="page-item active"><span class="page-link">{{ page_num }}</span></li>
                             {% else %}
                                 <li class="page-item">
-                                    <a class="page-link" href="?page={{ page_num }}">{{ page_num }}</a>
+                                    <a class="page-link" href="?page={{ page_num }}{% if status_filter %}&status={{ status_filter }}{% endif %}">{{ page_num }}</a>
                                 </li>
                             {% endif %}
                         {% endif %}
@@ -78,7 +132,7 @@
 
                     {% if reservations.has_next %}
                         <li class="page-item">
-                            <a class="page-link" href="?page={{ reservations.next_num }}">Tiếp</a>
+                            <a class="page-link" href="?page={{ reservations.next_num }}{% if status_filter %}&status={{ status_filter }}{% endif %}">Tiếp</a>
                         </li>
                     {% endif %}
                 </ul>

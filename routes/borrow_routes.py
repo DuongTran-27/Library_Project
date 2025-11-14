@@ -116,29 +116,74 @@ def return_book(record_id):
     # Calculate late fee
     late_fee = record.calculate_late_fee(Config.LATE_FEE_PER_DAY)
     
-    # Update record
+    # Update return record
     record.return_date = datetime.utcnow()
     record.late_fee = late_fee
     
-    # Increase available copies
-    record.book.available_copies += 1
+    # Check for waiting reservations (first in queue by reserved_at)
+    first_reservation = Reservation.query.filter_by(
+        book_id=record.book_id,
+        status='waiting'
+    ).order_by(Reservation.reserved_at.asc()).first()
     
-    db.session.commit()
+    if first_reservation:
+        # AUTO-BORROW: Create borrow record for first person in queue
+        due_date = datetime.utcnow() + timedelta(days=Config.BORROW_DURATION_DAYS)
+        auto_borrow = BorrowRecord(
+            user_id=first_reservation.user_id,
+            book_id=record.book_id,
+            due_date=due_date,
+            notes='Tự động mượn từ đặt trước'
+        )
+        
+        # Mark reservation as fulfilled
+        first_reservation.status = 'fulfilled'
+        
+        db.session.add(auto_borrow)
+        db.session.commit()
+        
+        # Send confirmation email to reserved user
+        try:
+            send_borrow_confirmation(first_reservation.user, record.book, due_date)
+        except Exception as e:
+            print(f"Error sending email: {e}")
+        
+        # Check for next person in queue
+        next_reservation = Reservation.query.filter_by(
+            book_id=record.book_id,
+            status='waiting'
+        ).order_by(Reservation.reserved_at.asc()).first()
+        
+        if next_reservation:
+            # Notify next person
+            next_reservation.status = 'notified'
+            db.session.commit()
+            
+            try:
+                from services.email_service import send_reservation_ready_notification
+                send_reservation_ready_notification(next_reservation.user, record.book)
+            except Exception as e:
+                print(f"Error sending email: {e}")
+    else:
+        # No one waiting, increase available copies
+        record.book.available_copies += 1
+        db.session.commit()
     
-    # Send confirmation email
+    # Send return confirmation email
     try:
         send_return_confirmation(current_user, record.book)
     except Exception as e:
         print(f"Error sending email: {e}")
     
-    # Check for reservations
-    reservations = Reservation.query.filter_by(
-        book_id=record.book_id, 
-        status='waiting'
-    ).first()
-    
-    if reservations:
+    # Show messages
+    if first_reservation:
         flash(f'Sách "{record.book.title}" đã được trả thành công.', 'success')
+        flash(f'{first_reservation.user.full_name} tự động được nhận sách và đã được gửi thông báo.', 'info')
+        if next_res := Reservation.query.filter_by(
+            book_id=record.book_id,
+            status='notified'
+        ).first():
+            flash(f'Người tiếp theo ({next_res.user.full_name}) đang chờ trong hàng.', 'info')
         if late_fee > 0:
             flash(f'Tiền phạt: {late_fee:,.0f} VND', 'warning')
     else:
@@ -218,9 +263,63 @@ def admin_return(record_id):
     
     record.return_date = datetime.utcnow()
     record.late_fee = late_fee
-    record.book.available_copies += 1
+    
+    # Check for waiting reservations (first in queue by reserved_at)
+    first_reservation = Reservation.query.filter_by(
+        book_id=record.book_id,
+        status='waiting'
+    ).order_by(Reservation.reserved_at.asc()).first()
+    
+    if first_reservation:
+        # AUTO-BORROW: Create borrow record for first person in queue
+        due_date = datetime.utcnow() + timedelta(days=Config.BORROW_DURATION_DAYS)
+        auto_borrow = BorrowRecord(
+            user_id=first_reservation.user_id,
+            book_id=record.book_id,
+            due_date=due_date,
+            notes='Tự động mượn từ đặt trước'
+        )
+        
+        # Mark reservation as fulfilled
+        first_reservation.status = 'fulfilled'
+        
+        db.session.add(auto_borrow)
+        db.session.commit()
+        
+        # Send confirmation email to reserved user
+        try:
+            send_borrow_confirmation(first_reservation.user, record.book, due_date)
+        except Exception as e:
+            print(f"Error sending email: {e}")
+        
+        # Check for next person in queue
+        next_reservation = Reservation.query.filter_by(
+            book_id=record.book_id,
+            status='waiting'
+        ).order_by(Reservation.reserved_at.asc()).first()
+        
+        if next_reservation:
+            # Notify next person
+            next_reservation.status = 'notified'
+            db.session.commit()
+            
+            try:
+                from services.email_service import send_reservation_ready_notification
+                send_reservation_ready_notification(next_reservation.user, record.book)
+            except Exception as e:
+                print(f"Error sending email: {e}")
+            
+            flash(f'Trả sách cho {record.user.full_name} thành công!', 'success')
+            flash(f'{first_reservation.user.full_name} tự động được nhận sách và đã được gửi thông báo.', 'info')
+            flash(f'Người tiếp theo ({next_reservation.user.full_name}) đang chờ trong hàng.', 'info')
+        else:
+            flash(f'Trả sách cho {record.user.full_name} thành công!', 'success')
+            flash(f'{first_reservation.user.full_name} tự động được nhận sách và đã được gửi thông báo.', 'info')
+    else:
+        # No one waiting, increase available copies
+        record.book.available_copies += 1
+        flash(f'Trả sách cho {record.user.full_name} thành công!', 'success')
     
     db.session.commit()
     
-    flash(f'Trả sách cho {record.user.full_name} thành công!', 'success')
     return redirect(url_for('admin.users'))
