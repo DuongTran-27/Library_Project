@@ -100,18 +100,14 @@ def borrow(book_id):
     return redirect(url_for('borrow.my_books'))
 
 @borrow_bp.route('/return/<int:record_id>', methods=['POST'])
-@login_required
+@admin_required
 def return_book(record_id):
-    """Return book"""
+    """Return book - ADMIN ONLY"""
     record = BorrowRecord.query.get_or_404(record_id)
-    
-    if record.user_id != current_user.id and not current_user.is_admin:
-        flash('Bạn không có quyền trả sách này.', 'danger')
-        return redirect(url_for('borrow.my_books'))
     
     if record.return_date is not None:
         flash('Sách này đã được trả rồi.', 'warning')
-        return redirect(url_for('borrow.my_books'))
+        return redirect(url_for('admin.users'))
     
     # Calculate late fee
     late_fee = record.calculate_late_fee(Config.LATE_FEE_PER_DAY)

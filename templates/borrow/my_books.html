@@ -51,7 +51,7 @@
                                 {% if is_overdue %}
                                     <br>
                                     <span class="badge bg-danger">
-                                        Quá hạn {{ (now().date() - record.due_date.date()).days }} ngày
+                                        Quá hạn {{ (-record.get_days_remaining()) }} ngày
                                     </span>
                                 {% else %}
                                     <br>
@@ -75,17 +75,16 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <form method="POST" action="{{ url_for('borrow.return_book', record_id=record.id) }}" style="display: inline;">
-                                    <button type="submit" class="btn btn-sm btn-success" title="Trả sách">
-                                        <i class="fas fa-check"></i> Trả
-                                    </button>
-                                </form>
                                 {% if not is_overdue %}
                                     <form method="POST" action="{{ url_for('borrow.renew', record_id=record.id) }}" style="display: inline;">
                                         <button type="submit" class="btn btn-sm btn-info" title="Gia hạn sách">
                                             <i class="fas fa-sync"></i> Gia hạn
                                         </button>
                                     </form>
+                                {% else %}
+                                    <span class="text-muted">
+                                        <i class="fas fa-info-circle"></i> Liên hệ admin để trả sách
+                                    </span>
                                 {% endif %}
                             </td>
                         </tr>

@@ -29,7 +29,7 @@
                 </thead>
                 <tbody>
                     {% for record in overdue.items %}
-                        {% set days_overdue = (now() - record.due_date).days %}
+                        {% set days_overdue = -record.get_days_remaining() %}
                         {% set late_fee = record.calculate_late_fee() %}
                         <tr>
                             <td>
